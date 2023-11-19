@@ -1,22 +1,21 @@
-import sc2reader                                      # Reads Replays
-import tkinter as tk                                  # Makes the GUI
-from tkinter import filedialog                        # Prompts user for information
-from tkinter import ttk                               # Better GUI options
-import os                                             # Parsing directory information
-import threading                                      # Threads so that program doesnt freeze
-import sys                                            # Probably dont need this one
-import pythoncom                                      # Parse window Link files
-from win32com.shell import shell, shellcon            # Parse window Link files
+import sc2reader
+import tkinter as tk
+from tkinter import filedialog
+from tkinter import ttk
+import os
+import threading
+import sys
+import pythoncom
+from win32com.shell import shell, shellcon
 
-# Initialize main global variables and output text file
 def init():
     global outputFile, mostRecentReplayTime, mostRecentReplay, iWon, pathToAccounts, accountList, accountPaths, myRace
-    global opponentsRace, window, programStarted
+    global opponentsRace, window, file
     global matchUp1Wins, matchUp2Wins, matchUp3Wins, matchUp1Total, matchUp2Total, matchUp3Total
     global matchUp1Output, matchUp2Output, matchUp3Output
 
     pathToAccounts        = filedialog.askdirectory(title="SElECT YOUR STARCRAFT 2 FOLDER: i.e. C:/Users/Newbi/Documents/StarCraft II")
-    outputFile            = filedialog.askopenfilename(title="Text file to write to.")
+    outputFile            = filedialog.askopenfilename(title="SELECT A TEXT FILE TO WRITE OUTPUT TO.")
     myRace                = "invalid"
     myName                = "invalid"
     opponentsRace         = "invalid"
@@ -24,8 +23,10 @@ def init():
     accountList           = []
     accountPaths          = []
     iWon                  = False
-    programStarted        = False
 
+    errorLogging("Starcraft2Directory: ", pathToAccounts, True)
+    errorLogging("OutputTextFile: ",outputFile, False)
+    
     matchUp1Wins          = 0
     matchUp2Wins          = 0
     matchUp3Wins          = 0
@@ -38,15 +39,21 @@ def init():
     matchUp2Output = "XvZ: 0/0"
     matchUp3Output = "XvT: 0/0"
     getUserInfo()
-    
+
     # Clear output file
-    f = open(outputFile, "w")
-    f.write(matchUp1Output + " \n" + matchUp2Output + " \n" + matchUp3Output)
+    file = open(outputFile, "w")
+    file.write(matchUp1Output + " \n" + matchUp2Output + " \n" + matchUp3Output)
+    file.close()
+
+def errorLogging(string1, string2, makeNewFile):
+    global pathToAccounts
+    if makeNewFile:
+        f = open(pathToAccounts + "/NewbiLog.txt", "w+")
+    else:
+        f = open(pathToAccounts + "/NewbiLog.txt", "a")
+    f.write(string1 + " " + string2 + "\n")
     f.close()
 
-# Parse window link files
-# Input: path including lnk file
-# Output: Target Path of the lnk file
 def shortcutTarget (shortcutfile):
 
     link = pythoncom.CoCreateInstance(shell.CLSID_ShellLink, None, pythoncom.CLSCTX_INPROC_SERVER, shell.IID_IShellLink)
@@ -54,8 +61,6 @@ def shortcutTarget (shortcutfile):
     targetPath, _ = link.GetPath (shell.SLGP_UNCPRIORITY)
     return targetPath
 
-# Figure outs who the players ID and all of their accounts and creates a list of paths to the replay folders
-# This is so that we can "monitor" those folders for the most recent replay
 def getUserInfo():
     global pathToAccounts, accountList, accountPaths
     includedExtensions = ["lnk"]
@@ -66,10 +71,12 @@ def getUserInfo():
         accountList.append(dirList[x].split("_")[0])
         accountPaths.append(shortcutTarget(lnkList[x]))
     accountPaths = [fd + "/Replays/Multiplayer" for fd in accountPaths]
+    for acct in accountPaths:
+        errorLogging("PathToReplays: ", acct, False)
 
-# Figures out if a new replay is in any of the account replay folders
-def getMostRecentReplay():
-    global accountPaths, mostRecentReplayTime, mostRecentReplay, window, programStarted
+def getMostRecentReplay(programStarted):
+    global accountPaths, mostRecentReplayTime, mostRecentReplay, window
+    errorLogging("Program ", "Running", False)
     included_extensions = ["SC2Replay"]
     for path in accountPaths:
         dir_list    = [path + "/" + fd for fd in os.listdir(path) 
@@ -80,18 +87,23 @@ def getMostRecentReplay():
             if ( replayTime > mostRecentReplayTime):
                 mostRecentReplayTime = os.path.getmtime(replayPath)
                 mostRecentReplay     = replayPath
-                if programStarted:
-                    analyzeReplay()
+                errorLogging("mostRecentReplay: ", mostRecentReplay, False)
+                errorLogging("mostRecentReplayTime: ", str(mostRecentReplayTime), False)
+                analyzeReplay(programStarted)
 
     if programStarted:
         window.update()
-        window.after(1000,getMostRecentReplay)
+        window.after(1000,getMostRecentReplay, True)
 
-# Parse the replay for the information desired
-def analyzeReplay():    
+def analyzeReplay(programStarted):    
     global replay, myRace, opponentsRace, iWon, accountList, mostRecentReplay
+    errorLogging("analyzeReplay: ", "Yay!", False)
     replay      = sc2reader.load_replay(mostRecentReplay, load_level=4)
-    if replay.is_ladder:
+    errorLogging("player1Race: ", replay.people[0].play_race, False)
+    errorLogging("player2Race: ", replay.people[1].play_race, False)
+    if replay.is_ladder and programStarted:
+        errorLogging("is_ladder: ", "True", False)
+        errorLogging("winner: ", replay.winner.players[0].name, False)
         player1Race = replay.people[0].play_race
         player2Race = replay.people[1].play_race
         iWon = False
@@ -113,11 +125,10 @@ def analyzeReplay():
             # and we can exclude non ladder games or make additional stats for ranked/unranked etc
             # isLadder = replay.is_ladder
 
-# Update the text file
 def updateTextFile():
     global myRace, opponentsRace, iWon
     global matchUp1Wins, matchUp2Wins, matchUp3Wins, matchUp1Total, matchUp2Total, matchUp3Total
-    global matchUp1Output, matchUp2Output, matchUp3Output
+    global matchUp1Output, matchUp2Output, matchUp3Output, file
 
     matchUp1 = myRace[0] + "vP: "
     matchUp2 = myRace[0] + "vZ: "
@@ -139,24 +150,22 @@ def updateTextFile():
         matchUp3Total += 1
         matchUp3Output = matchUp3 + str(matchUp3Wins) + "/" + str(matchUp3Total)
 
-    f = open(outputFile, "w")
-    f.write(matchUp1Output + "\n" + matchUp2Output + "\n" + matchUp3Output )
-    f.close()
+    file = open(outputFile, "w")
+    file.write(matchUp1Output + "\n" + matchUp2Output + "\n" + matchUp3Output )
+    file.close()
 
-# Start program on its own thread
 def startProgram():
-    global programStarted
-    programStarted = True
-    theThread = threading.Thread(target=getMostRecentReplay())
+    errorLogging("Program ", "started", False)
+    theThread = threading.Thread(target=getMostRecentReplay(True))
     theThread.daemon = True
     theThread.start()
 
-# Close program
 def exitProgram(window):
+    global file
+    file.close()
     window.destroy()
     window.quit()
-
-# Main Gui Interface
+    
 def Sc2WinStatsReporterGui():
     global window
     # Create a window
@@ -190,13 +199,11 @@ def Sc2WinStatsReporterGui():
                      width = 100, 
                      height= 50)
 
-# Just because main functions
 def main():
     init() 
-    getMostRecentReplay()
+    getMostRecentReplay(False)
     Sc2WinStatsReporterGui()
 
-# Ok, I dont know what I am doing anymore, I think this is what we should do
 if __name__ == '__main__':
     main()
     # run
