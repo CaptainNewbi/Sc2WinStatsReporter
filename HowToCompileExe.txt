@@ -1,0 +1,29 @@
+# Install PyInstaller from PyPI:
+	pip install pyinstaller
+
+# Go to your program’s directory and run:
+# This will generate the bundle in a subdirectory called dist.
+	
+	pyinstaller Sc2WinStatsReporter2.0.py
+
+# This will generate the exe in your dist folder
+	pyinstaller -F --paths=<your_path>\Lib\site-packages  Sc2WinStatsReporter.py
+
+# running into "ImportError" you might consider side-packages.
+	pip install pynput==1.6.8
+ 
+# might need to tell it where your site-packages are
+# Find them with:
+		Python -m site 
+
+# 'C:\\ProgramData\\anaconda3\\envs\\Starcraft2Programs\\Lib\\site-packages'
+
+# Might need to set this path
+	set PATH=%PATH%;C:\Users\Newbi\AppData\Roaming\Python\Python311\Scripts
+
+
+
+# These are the 2 commands I run everytime to compile in order, and exist in the bat file
+	pyinstaller Sc2WinStatsReporter.py
+
+	pyinstaller --collect-data sc2reader --hiddenimport win32timezone -F --windowed --paths=C:\ProgramData\anaconda3\envs\SC2Programs\Lib\site-packages  Sc2WinStatsReporterV2.py
