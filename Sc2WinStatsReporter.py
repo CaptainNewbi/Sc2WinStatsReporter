@@ -127,18 +127,18 @@ def updateTextFile():
         if (iWon):
             matchUp1Wins += 1
         matchUp1Total += 1
-        matchUp1Output = matchUp1 + str(matchUp1Wins) + "/" + str(matchUp1Total)
     elif (opponentsRace == 'Zerg'):
         if (iWon):
             matchUp2Wins += 1
         matchUp2Total += 1
-        matchUp2Output = matchUp2 + str(matchUp2Wins) + "/" + str(matchUp2Total)
     elif (opponentsRace == 'Terran'):
         if (iWon):
             matchUp3Wins += 1
         matchUp3Total += 1
-        matchUp3Output = matchUp3 + str(matchUp3Wins) + "/" + str(matchUp3Total)
 
+    matchUp1Output = matchUp1 + str(matchUp1Wins) + "/" + str(matchUp1Total)
+    matchUp2Output = matchUp2 + str(matchUp2Wins) + "/" + str(matchUp2Total)
+    matchUp3Output = matchUp3 + str(matchUp3Wins) + "/" + str(matchUp3Total)
     f = open(outputFile, "w")
     f.write(matchUp1Output + "\n" + matchUp2Output + "\n" + matchUp3Output )
     f.close()
